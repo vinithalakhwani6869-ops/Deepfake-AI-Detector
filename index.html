@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeepFake Detector AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-logo">
+      <span class="logo-mark"></span>
+      DeepFake<span class="logo-accent">AI</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Features</a></li>
+      <li><a href="#">About</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+    <button class="btn-try">Try Now</button>
+    <div class="hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobileMenu">
+    <ul>
+      <li><a href="#">Home</a></li>
+      <li><a href="#">Features</a></li>
+      <li><a href="#">About</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+    <button class="btn-try" style="width:100%;">Try Now</button>
+  </div>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <span class="eyebrow-dot"></span>
+        AI-Powered Verification
+      </div>
+      <h1>Detect Deepfakes<br/><em>Instantly.</em></h1>
+      <p class="hero-sub">
+        Forensic-grade analysis for images and videos. Trusted by journalists,
+        legal teams, and security researchers worldwide.
+      </p>
+      <div class="hero-actions">
+        <button class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 1v10M8 1L4.5 4.5M8 1l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12h12v2a1 1 0 01-1 1H3a1 1 0 01-1-1v-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          Upload File
+        </button>
+        <button class="btn-outline">View Demo</button>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric">
+          <span class="metric-val">99.4%</span>
+          <span class="metric-label">Detection Accuracy</span>
+        </div>
+        <div class="metric-sep"></div>
+        <div class="metric">
+          <span class="metric-val">2.1s</span>
+          <span class="metric-label">Avg. Analysis Time</span>
+        </div>
+        <div class="metric-sep"></div>
+        <div class="metric">
+          <span class="metric-val">50M+</span>
+          <span class="metric-label">Files Processed</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="canvas-wrap">
+        <canvas id="threeCanvas"></canvas>
+        <div class="canvas-label">
+          <span class="pulse-dot"></span>
+          Real-time model active
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UPLOAD -->
+  <section class="upload-section">
+    <div class="section-label">Analysis Engine</div>
+    <h2>Start Your<br/><span class="txt-violet">Analysis</span></h2>
+    <p class="section-sub">Drop any image or video — our model returns a detailed forensic report.</p>
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-inner">
+        <div class="drop-icon-wrap">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 2v13M11 2L6.5 6.5M11 2l4.5 4.5" stroke="#7B61FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 15v3a2 2 0 002 2h14a2 2 0 002-2v-3" stroke="#00E6FF" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <p class="drop-title">Drop file to analyze</p>
+          <p class="drop-sub">or <span class="txt-violet">browse from your device</span></p>
+        </div>
+        <span class="drop-badge">JPG · PNG · MP4 · MOV · Max 200MB</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features-section">
+    <div class="section-label">Capabilities</div>
+    <h2>Built for<br/><span class="txt-cyan">Professionals</span></h2>
+    <p class="section-sub">Every feature designed for accuracy, speed, and trust.</p>
+
+    <div class="features-grid">
+      <div class="feature-card fc-violet">
+        <div class="fc-number">01</div>
+        <div class="fc-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <circle cx="11" cy="11" r="8.5" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M7 11l2.8 2.8L15 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Fast Detection</h3>
+        <p>Sub-3-second inference pipeline powered by dedicated GPU clusters. Real-time results at any file size.</p>
+      </div>
+
+      <div class="feature-card fc-cyan">
+        <div class="fc-number">02</div>
+        <div class="fc-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 2L20 7v8L11 20 2 15V7L11 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <circle cx="11" cy="11" r="3" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+        </div>
+        <h3>AI Powered</h3>
+        <p>Transformer architecture trained on 50M+ media samples, continuously fine-tuned against emerging synthesis models.</p>
+      </div>
+
+      <div class="feature-card fc-orange">
+        <div class="fc-number">03</div>
+        <div class="fc-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="4" y="9" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M8 9V7a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="11" cy="14.5" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <h3>Secure Analysis</h3>
+        <p>End-to-end encrypted pipeline. Files are never retained — processed in memory and purged immediately after analysis.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="nav-logo">
+        <span class="logo-mark"></span>
+        DeepFake<span class="logo-accent">AI</span>
+      </div>
+      <p class="footer-copy">© 2026 DeepFake Detector AI. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Security</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
