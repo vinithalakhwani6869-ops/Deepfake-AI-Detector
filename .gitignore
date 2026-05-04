@@ -1,20 +1,18 @@
-# Python cache
+# Python
 __pycache__/
 *.pyc
-
-# Virtual environments
 venv/
 .env
+
+# Node
+node_modules/
 
 # Model weights
 *.pth
 
-# Node modules (only if used)
-node_modules/
-
 # Logs
 *.log
 
-# OS junk
+# OS files
 .DS_Store
 Thumbs.db
