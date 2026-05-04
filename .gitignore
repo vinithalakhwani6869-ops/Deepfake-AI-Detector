@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# model weights
+*.pth
+
+# uploads
+uploads/
+
+# local environment
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
