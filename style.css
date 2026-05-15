@@ -904,3 +904,149 @@ body {
     padding-right: 2.25rem;
   }
 }
+
+.result-panel {
+  max-width: 640px;
+  margin-top: 1.25rem;
+  border: 1px solid var(--card-b);
+  border-radius: var(--r-lg);
+  background: var(--card);
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+
+.result-panel--fake  { border-color: rgba(220, 53,  69,  0.55); }
+.result-panel--real  { border-color: rgba(40,  199, 111, 0.5);  }
+.result-panel--error { border-color: rgba(255, 138, 0,   0.5);  }
+
+.result-panel-inner {
+  padding: 2rem;
+}
+
+.result-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* Loading spinner */
+@keyframes rp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.result-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--card-b);
+  border-top-color: var(--violet);
+  border-radius: 50%;
+  animation: rp-spin 0.7s linear infinite;
+}
+
+.result-state-text {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--t2);
+  margin: 0;
+}
+
+/* Verdict badge */
+.result-verdict {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.result-verdict--fake { color: #dc3545; }
+.result-verdict--real { color: #28c76f; }
+
+/* Detail rows */
+.result-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.result-row:last-child { border-bottom: none; }
+
+.result-row-label {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.result-row-value {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--t1);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* Error state */
+.result-error-icon {
+  font-size: 1.4rem;
+  color: var(--orange);
+  margin: 0;
+}
+
+.result-error-text {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--t2);
+  margin: 0;
+  line-height: 1.65;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .result-panel-inner { padding: 1.5rem; }
+  .result-verdict     { font-size: 1.6rem; }
+}
+
+
+/* ── FORM 2: Contact Form Feedback ─────────────────────────── */
+
+.contact-feedback {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-sm);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.6;
+  border: 1px solid transparent;
+}
+
+.contact-feedback--success {
+  color: #28c76f;
+  background: rgba(40, 199, 111, 0.08);
+  border-color: rgba(40, 199, 111, 0.25);
+}
+
+.contact-feedback--error {
+  color: var(--orange);
+  background: rgba(255, 138, 0, 0.07);
+  border-color: rgba(255, 138, 0, 0.25);
+}
+

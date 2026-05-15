@@ -11,37 +11,37 @@
 </head>
 <body>
 
-  <!-- NAVBAR -->
+  <!-- ── NAVBAR (unchanged) ─────────────────────────────────────────────────── -->
   <nav class="navbar">
     <div class="nav-logo">
       <span class="logo-mark"></span>
       DeepFake<span class="logo-accent">AI</span>
     </div>
     <ul class="nav-links">
-      <li><a href="#">Home</a></li>
-      <li><a href="#">Features</a></li>
-      <li><a href="#">About</a></li>
-      <li><a href="#">Contact</a></li>
+      <li><a href="#home">Home</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
     </ul>
-    <button class="btn-try">Try Now</button>
+    <button class="btn-try" id="tryNowBtn">Try Now</button>
     <div class="hamburger" id="hamburger">
       <span></span><span></span><span></span>
     </div>
   </nav>
 
-  <!-- MOBILE MENU -->
+  <!-- ── MOBILE MENU (unchanged) ───────────────────────────────────────────── -->
   <div class="mobile-menu" id="mobileMenu">
     <ul>
-      <li><a href="#">Home</a></li>
-      <li><a href="#">Features</a></li>
-      <li><a href="#">About</a></li>
-      <li><a href="#">Contact</a></li>
+      <li><a href="#home">Home</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
     </ul>
-    <button class="btn-try" style="width:100%;">Try Now</button>
+    <button class="btn-try" id="mobileTryNowBtn" style="width:100%;">Try Now</button>
   </div>
 
-  <!-- HERO -->
-  <section class="hero">
+  <!-- ── HERO (unchanged) ──────────────────────────────────────────────────── -->
+  <section class="hero" id="home">
     <div class="hero-left">
       <div class="eyebrow">
         <span class="eyebrow-dot"></span>
@@ -53,14 +53,14 @@
         legal teams, and security researchers worldwide.
       </p>
       <div class="hero-actions">
-        <button class="btn-primary">
+        <button class="btn-primary" id="heroUploadBtn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M8 1v10M8 1L4.5 4.5M8 1l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M2 12h12v2a1 1 0 01-1 1H3a1 1 0 01-1-1v-2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
           </svg>
           Upload File
         </button>
-        <button class="btn-outline">View Demo</button>
+        <button class="btn-outline" id="viewDemoBtn">View Demo</button>
       </div>
       <div class="hero-metrics">
         <div class="metric">
@@ -91,12 +91,33 @@
     </div>
   </section>
 
-  <!-- UPLOAD -->
-  <section class="upload-section">
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       FORM 1 — IMAGE DETECTION FORM
+       ─────────────────────────────────────────────────────────────────────────
+       HOW PAGE REFRESH IS PREVENTED:
+         There is no <form> element here at all — the drop zone is a plain <div>.
+         The hidden <input type="file"> is triggered programmatically via
+         fileInput.click() — it never participates in any form submission.
+         The upload is sent via fetch() in JS. Nothing here can cause a reload.
+
+       FLOW:
+         1. User drops file onto #dropZone  OR  clicks it to open file picker
+         2. JS validates file type + size before touching the network
+         3. showLoading() reveals the result panel with a spinner
+         4. fetch() POSTs FormData to http://127.0.0.1:8000/detect
+         5. On 200 OK  → showResult() fills in verdict / confidence / filename
+         6. On HTTP error → showDetectionError() with a message per status code
+         7. On network error (backend offline) → showDetectionError() with clear message
+  ══════════════════════════════════════════════════════════════════════════════ -->
+  <section class="upload-section" id="analysis-engine">
     <div class="section-label">Analysis Engine</div>
     <h2>Start Your<br/><span class="txt-violet">Analysis</span></h2>
-    <p class="section-sub">Drop any image or video — our model returns a detailed forensic report.</p>
+    <p class="section-sub">Drop any image and run a streamlined AI check with an instant result summary.</p>
+
+    <!-- Plain div — NOT a form. No native submission possible. -->
     <div class="drop-zone" id="dropZone">
+      <!-- Triggered by JS only, never by form submit -->
+      <input type="file" id="fileInput" class="file-input" accept=".jpg,.jpeg,.png,.webp" hidden/>
       <div class="drop-inner">
         <div class="drop-icon-wrap">
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -105,19 +126,64 @@
           </svg>
         </div>
         <div>
-          <p class="drop-title">Drop file to analyze</p>
+          <p class="drop-title" id="dropTitle">Drop file to analyze</p>
           <p class="drop-sub">or <span class="txt-violet">browse from your device</span></p>
         </div>
-        <span class="drop-badge">JPG · PNG · MP4 · MOV · Max 200MB</span>
+        <span class="drop-badge">JPG · PNG · WEBP · Max 20MB</span>
       </div>
+    </div>
+
+    <!--
+      RESULT PANEL — hidden on page load.
+      JS controls which inner state is visible:
+        #resultLoading  — while fetch() is in flight
+        #resultSuccess  — verdict + confidence + filename on success
+        #resultError    — human-readable error on any failure
+    -->
+    <div class="result-panel" id="resultPanel" aria-live="polite" style="display:none;">
+      <div class="result-panel-inner">
+
+        <!-- State: loading -->
+        <div class="result-state" id="resultLoading" style="display:none;">
+          <div class="result-spinner"></div>
+          <p class="result-state-text">Analysing image&hellip;</p>
+        </div>
+
+        <!-- State: success -->
+        <div class="result-state" id="resultSuccess" style="display:none;">
+          <div class="result-verdict" id="resultVerdict"></div>
+          <div class="result-rows">
+            <div class="result-row">
+              <span class="result-row-label">Confidence</span>
+              <span class="result-row-value" id="resultConfidence">—</span>
+            </div>
+            <div class="result-row">
+              <span class="result-row-label">File</span>
+              <span class="result-row-value" id="resultFilename">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- State: error -->
+        <div class="result-state" id="resultError" style="display:none;">
+          <p class="result-error-icon">⚠</p>
+          <p class="result-error-text" id="resultErrorText">Something went wrong.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Legacy status line — kept so existing CSS classes still apply -->
+    <div class="analysis-status" id="analysisStatus" aria-live="polite">
+      <p class="status-label">No file selected yet.</p>
     </div>
   </section>
 
-  <!-- FEATURES -->
-  <section class="features-section">
+  <!-- ── FEATURES (unchanged) ──────────────────────────────────────────────── -->
+  <section class="features-section" id="features">
     <div class="section-label">Capabilities</div>
-    <h2>Built for<br/><span class="txt-cyan">Professionals</span></h2>
-    <p class="section-sub">Every feature designed for accuracy, speed, and trust.</p>
+    <h2>Features</h2>
+    <p class="section-sub">Every feature is designed to keep detection fast, private, and easy to understand.</p>
 
     <div class="features-grid">
       <div class="feature-card fc-violet">
@@ -129,7 +195,7 @@
           </svg>
         </div>
         <h3>Fast Detection</h3>
-        <p>Sub-3-second inference pipeline powered by dedicated GPU clusters. Real-time results at any file size.</p>
+        <p>Analyze images instantly with optimized AI processing.</p>
       </div>
 
       <div class="feature-card fc-cyan">
@@ -140,8 +206,8 @@
             <circle cx="11" cy="11" r="3" stroke="currentColor" stroke-width="1.6"/>
           </svg>
         </div>
-        <h3>AI Powered</h3>
-        <p>Transformer architecture trained on 50M+ media samples, continuously fine-tuned against emerging synthesis models.</p>
+        <h3>AI-Powered Analysis</h3>
+        <p>Leverages advanced machine learning models to detect deepfake content.</p>
       </div>
 
       <div class="feature-card fc-orange">
@@ -153,20 +219,205 @@
             <circle cx="11" cy="14.5" r="1.5" fill="currentColor"/>
           </svg>
         </div>
-        <h3>Secure Analysis</h3>
-        <p>End-to-end encrypted pipeline. Files are never retained — processed in memory and purged immediately after analysis.</p>
+        <h3>Secure &amp; Private</h3>
+        <p>Your files are processed securely and are not stored permanently.</p>
+      </div>
+
+      <div class="feature-card fc-violet">
+        <div class="fc-number">04</div>
+        <div class="fc-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="3.5" y="5" width="15" height="12" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M8 17V19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M14 17V19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M7.5 9.5H14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M7.5 12.5H11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Multi-Format Support</h3>
+        <p>Supports JPG, PNG and WebP images for comprehensive detection.</p>
+      </div>
+
+      <div class="feature-card fc-cyan">
+        <div class="fc-number">05</div>
+        <div class="fc-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 15.5L8.5 11l3 3L18 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 11V7.5H14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Confidence Score</h3>
+        <p>Receive a probability score indicating how likely the content is fake.</p>
       </div>
     </div>
   </section>
 
-  <!-- FOOTER -->
+  <!-- ── ABOUT (unchanged) ─────────────────────────────────────────────────── -->
+  <section class="about-section" id="about">
+    <div class="section-label">About</div>
+    <h2>About DeepFake Detector AI</h2>
+    <div class="about-card">
+      <p>
+        DeepFake Detector AI is a modern AI-powered tool designed to identify manipulated images and videos.
+        With the rapid rise of deepfake technology, verifying digital authenticity has become more important than ever.
+      </p>
+      <p>
+        Our platform allows users to upload media files and analyze them using advanced AI techniques
+        to determine whether the content is real or artificially generated.
+      </p>
+      <div class="about-highlights">
+        <span>Fast detection</span>
+        <span>User privacy</span>
+        <span>Reliable AI insights</span>
+      </div>
+      <p>
+        This project aims to demonstrate how AI can be used to combat misinformation and enhance digital trust.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       FORM 2 — CONTACT FORM
+       ─────────────────────────────────────────────────────────────────────────
+       HOW PAGE REFRESH IS PREVENTED:
+         JS attaches a "submit" event listener to #contactForm.
+         The listener calls event.preventDefault() as its very first line,
+         which cancels the browser's default action (navigating / reloading).
+         After that, JS takes over and calls emailjs.sendForm().
+
+       HOW EMAILJS WORKS:
+         EmailJS is a third-party service that lets a browser send email
+         directly without a backend. The SDK is loaded via CDN above script.js.
+         emailjs.init(PUBLIC_KEY) is called once in script.js on page load.
+         emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, formElement) reads the
+         input name="" attributes and maps them to {{variables}} in your
+         EmailJS template, then POSTs to EmailJS servers over HTTPS.
+         No credentials are exposed beyond the public key (which is safe).
+
+       INPUT name="" → EmailJS template variable mapping:
+         name="from_name"   →  {{from_name}}
+         name="from_email"  →  {{from_email}}
+         name="message"     →  {{message}}
+
+       FLOW:
+         1. User fills in name, email, message and clicks Submit
+         2. event.preventDefault() — no reload
+         3. JS validates fields (empty check, email format)
+         4. Button disabled + text → "Sending…" (prevents double-submit)
+         5. emailjs.sendForm() POSTs to EmailJS
+         6. On success → #contactFeedback shows green success message,
+                         form fields cleared, button re-enabled
+         7. On failure → #contactFeedback shows orange error message,
+                         button re-enabled so user can retry
+  ══════════════════════════════════════════════════════════════════════════════ -->
+  <section class="contact-section" id="contact">
+    <div class="section-label">Contact</div>
+    <h2>Get in Touch</h2>
+    <div class="contact-grid">
+
+      <div class="contact-card">
+        <p class="section-sub">Have questions or feedback? We'd love to hear from you.</p>
+        <div class="contact-links">
+          <a href="mailto:support@deepfakeai.com">support@deepfakeai.com</a>
+          <a href="#">GitHub</a>
+        </div>
+      </div>
+
+      <!--
+        id="contactForm"  — JS attaches the submit listener here
+        novalidate        — turns off browser native validation UI;
+                            validation is handled in JS for full control
+      -->
+      <form class="contact-form" id="contactForm" novalidate>
+
+        <label>
+          <span>Name</span>
+          <!--
+            name="from_name" → maps to {{from_name}} in your EmailJS template
+            id="contactName" → used by JS for validation
+          -->
+          <input
+            type="text"
+            name="from_name"
+            id="contactName"
+            placeholder="Your name"
+            autocomplete="name"
+          />
+        </label>
+
+        <label>
+          <span>Email</span>
+          <!--
+            name="from_email" → maps to {{from_email}} in your EmailJS template
+            id="contactEmail" → used by JS for validation
+          -->
+          <input
+            type="email"
+            name="from_email"
+            id="contactEmail"
+            placeholder="you@example.com"
+            autocomplete="email"
+          />
+        </label>
+
+        <label>
+          <span>Message</span>
+          <!--
+            name="message" → maps to {{message}} in your EmailJS template
+            id="contactMessage" → used by JS for validation
+          -->
+          <textarea
+            name="message"
+            id="contactMessage"
+            rows="5"
+            placeholder="Tell us what you're working on"
+          ></textarea>
+        </label>
+
+        <!-- Submit button — JS updates innerText during send to show "Sending…" -->
+        <button type="submit" class="btn-primary" id="contactSubmitBtn">Submit</button>
+
+        <!--
+          Inline feedback div — hidden by default (display:none).
+          JS sets its text and adds .contact-feedback--success or
+          .contact-feedback--error to colour it correctly.
+          Lives inside the form so it appears right below the button.
+        -->
+        <div class="contact-feedback" id="contactFeedback" style="display:none;"></div>
+
+      </form>
+    </div>
+  </section>
+
+  <!-- ── DEMO MODAL (unchanged) ────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="demoModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="demoModalTitle">
+      <button class="modal-close" id="closeModalBtn" aria-label="Close demo video">×</button>
+      <div class="modal-copy">
+        <div class="section-label">Product Demo</div>
+        <h3 id="demoModalTitle">How to use DeepFake Detector AI</h3>
+      </div>
+      <div class="video-frame">
+        <iframe
+          id="demoVideo"
+          src=""
+          title="DeepFake Detector AI demo"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          referrerpolicy="strict-origin-when-cross-origin"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER (unchanged) ────────────────────────────────────────────────── -->
   <footer class="footer">
     <div class="footer-inner">
       <div class="nav-logo">
         <span class="logo-mark"></span>
         DeepFake<span class="logo-accent">AI</span>
       </div>
-      <p class="footer-copy">© 2026 DeepFake Detector AI. All rights reserved.</p>
+      <p class="footer-copy">© 2026 DeepFake Detector AI</p>
       <div class="footer-links">
         <a href="#">Privacy</a>
         <a href="#">Terms</a>
@@ -175,7 +426,15 @@
     </div>
   </footer>
 
+  <!-- Three.js CDN (unchanged) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!--
+    EmailJS browser SDK v3 — must load BEFORE script.js.
+    Exposes the global `emailjs` object used in script.js.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
   <script src="script.js"></script>
 </body>
 </html>
