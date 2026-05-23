@@ -1,0 +1,5 @@
+# TODO: wire to training/trainer.py
+epochs: 50
+batch_size: 32
+learning_rate: 1.0e-4
+loss: bce

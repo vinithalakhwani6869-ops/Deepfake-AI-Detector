@@ -1,0 +1,10 @@
+# Mirrors production API validation limits (original app.py)
+model_name: efficientnet_b0
+weights_file: deepfake_model.pth
+max_file_mb: 50
+max_image_px: 8000
+pre_inference_max_px: 512
+allowed_mime:
+  - image/jpeg
+  - image/png
+  - image/webp

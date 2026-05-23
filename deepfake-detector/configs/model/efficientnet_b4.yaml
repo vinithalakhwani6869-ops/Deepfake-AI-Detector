@@ -1,0 +1,5 @@
+# TODO: implement EfficientNet-B4 in models/efficientnet.py and register in model_registry
+model_name: efficientnet_b4
+num_classes: 2
+input_size: 380
+weights_file: deepfake_model_b4.pth

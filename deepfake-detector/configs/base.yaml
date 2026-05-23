@@ -1,0 +1,4 @@
+# Shared defaults for all pipelines
+project_name: deepfake-detector
+seed: 42
+device: auto  # cuda if available, else cpu
