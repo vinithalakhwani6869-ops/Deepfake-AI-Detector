@@ -187,8 +187,8 @@ class Trainer:
         self._amp_enabled  = config.use_amp and device.type == "cuda"
         self._device_type  = device.type  # stored for autocast calls
 
-        if _AMP_NEW_API:
-            self._scaler = GradScaler(device_type=device.type, enabled=self._amp_enabled)
+        if _AMP_NEW_API
+            self._scaler = GradScaler(enabled=self._amp_enabled)
         else:
             self._scaler = GradScaler(enabled=self._amp_enabled)
 
