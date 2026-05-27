@@ -3,4 +3,6 @@ pytest>=8.0
 httpx>=0.27
 black>=24.0
 mypy>=1.10
-# TODO: albumentations, scikit-learn, matplotlib for training/evaluation
+matplotlib>=3.8
+pyyaml>=6.0
+# TODO: albumentations, scikit-learn for extended training pipelines

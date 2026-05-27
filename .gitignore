@@ -9,6 +9,10 @@ node_modules/
 
 # Model weights
 *.pth
+deepfake-detector/checkpoints/*.pth
+deepfake-detector/temp_uploads/
+deepfake-detector/logs/
+deepfake-api/temp_uploads/
 
 # Logs
 *.log

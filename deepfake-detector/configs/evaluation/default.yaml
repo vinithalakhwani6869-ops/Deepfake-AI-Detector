@@ -1,0 +1,13 @@
+# Default offline evaluation settings (used with: python scripts/evaluate.py --config configs/evaluation/default.yaml)
+model_name: efficientnet_b0
+input_size: 224
+batch_size: 32
+num_workers: 0
+device: auto
+threshold: 0.5
+seed: 42
+
+# Override these paths on the CLI or here:
+# checkpoint: checkpoints/deepfake_model.pth
+# val_dir: data/val
+# test_dir: data/test
