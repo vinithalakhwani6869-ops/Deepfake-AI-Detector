@@ -4,22 +4,76 @@ scripts/evaluate.py
 ───────────────────
 CLI entry point for offline deepfake model evaluation.
 
-Usage:
+USAGE EXAMPLES
+──────────────
+
+Evaluate on a single split (e.g. validation):
     python scripts/evaluate.py \\
         --checkpoint checkpoints/deepfake_model.pth \\
         --val-dir data/val \\
         --output-dir logs/eval_run_001
 
+Evaluate train + val + test with threshold tuning on val:
     python scripts/evaluate.py \\
         --checkpoint checkpoints/deepfake_model.pth \\
+        --train-dir data/train \\
         --val-dir data/val \\
         --test-dir data/test \\
         --tune-threshold \\
-        --benchmark \\
         --output-dir logs/eval_run_001
 
-Loads optional YAML config (--config) for paths and hyperparameters.
-Saves metrics.json and evaluation plots under --output-dir.
+Benchmark inference latency on CPU and GPU:
+    python scripts/evaluate.py \\
+        --checkpoint checkpoints/deepfake_model.pth \\
+        --val-dir data/val \\
+        --benchmark \\
+        --benchmark-images 100 \\
+        --output-dir logs/eval_run_001
+
+Load settings from a YAML config (CLI args override YAML):
+    python scripts/evaluate.py \\
+        --config configs/evaluation/default.yaml \\
+        --output-dir logs/eval_run_001
+
+OUTPUT FILES
+────────────
+
+metrics.json — JSON report with:
+  • Metrics (accuracy, precision, recall, F1, ROC-AUC, confusion matrix) per split
+  • Per-image P(fake) scores and predictions (for analysis and reproducibility)
+  • Benchmark results if --benchmark is set
+  • Configuration snapshot
+
+plots/
+  • {split}_roc_curve.png — ROC curve
+  • {split}_confusion_matrix.png — Confusion matrix heatmap
+  • {split}_score_distribution.png — P(fake) histograms for threshold tuning
+
+PRODUCTION NOTES
+────────────────
+
+1. Always use --tune-threshold on a held-out validation split before evaluating test.
+   Tuning on test data leaks the test set into the model.
+
+2. False positive analysis: high-confidence misclassifications of real images are
+   often indicative of dataset issues (duplicates, near-duplicates, mislabeling).
+   Inspect these manually.
+
+3. Confidence calibration: if model outputs are poorly calibrated (high-confidence
+   predictions are often wrong), you may need to retrain with different augmentation
+   or regularisation.
+
+4. Deployment thresholds: the decision threshold of 0.5 works only if probabilities
+   are well-calibrated. Use --tune-threshold with your target metric (F1, Youden)
+   to find the right operating point for your deployment constraints.
+
+LIMITATIONS
+───────────
+
+• Offline metrics use single frames. Video temporal consistency is not evaluated.
+• No cross-codec robustness testing (H.264 vs H.265 vs raw).
+• No adversarial robustness evaluation.
+• No demographic bias analysis (accuracy by ethnicity, age, gender).
 """
 
 from __future__ import annotations
@@ -142,13 +196,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--benchmark",
         action="store_true",
-        help="Run inference latency / throughput benchmark on val-dir",
+        help="Run inference latency / throughput benchmark on val-dir or test-dir",
     )
     p.add_argument(
         "--benchmark-images",
         type=int,
         default=100,
-        help="Max images for benchmark profiling",
+        help="Max images for benchmark profiling (to keep CLI fast)",
     )
     p.add_argument(
         "--no-plots",
@@ -189,6 +243,7 @@ def _print_summary(results: dict) -> None:
 
 
 def main(argv: Optional[list[str]] = None) -> int:
+    """Main entry point."""
     parser = _build_arg_parser()
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)
