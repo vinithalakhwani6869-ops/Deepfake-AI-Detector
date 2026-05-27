@@ -15,6 +15,33 @@ If offline evaluation skips stage 1 and only uses torchvision transforms on
 disk files, metrics will be optimistically biased (different pixel distribution)
 and will not predict production behaviour. This module applies both stages on
 every image, identical to core/detector.py.
+
+FALSE POSITIVE ANALYSIS (FP)
+───────────────────────────
+False positives are real images incorrectly classified as fake. In production,
+these translate to unjustified accusations. FP analysis should examine:
+  • Which real images are most often misclassified (e.g. poor lighting, makeup)?
+  • Are there systematic patterns (e.g. certain ethnicities, age groups)?
+  • What confidence scores do false positives receive?
+
+HIGH-CONFIDENCE FALSE POSITIVES ARE DANGEROUS:
+If the model confidently flags real images as fake, users lose trust. These
+warrant immediate investigation for dataset issues or model bias.
+
+FALSE NEGATIVE ANALYSIS (FN)
+───────────────────────────
+False negatives are deepfakes incorrectly classified as real. For detection,
+these are the critical failure mode — missed fakes in production.
+
+FN analysis should examine:
+  • Which deepfake generation methods are most often missed (Face2Face, FaceSwap, Reenactment)?
+  • Do compression/codec variations affect FN rate (H.264 vs raw)?
+  • Are there temporal patterns the model misses?
+
+LOW-CONFIDENCE FALSE NEGATIVES MAY BE FIXABLE:
+If FN have low confidence scores, threshold tuning might reduce them. If they
+have high confidence, the model's learned representations may not capture
+certain deepfake patterns — more data or architecture changes may be needed.
 """
 
 from __future__ import annotations
@@ -48,7 +75,12 @@ SplitName = Literal["train", "val", "test"]
 
 @dataclass
 class EvaluatorConfig:
-    """Configuration for offline evaluation runs."""
+    """
+    Configuration for offline evaluation runs.
+    
+    All paths are resolved to absolute Paths at runtime.
+    Device is resolved to a torch.device (auto → cuda/mps/cpu).
+    """
 
     checkpoint_path: Path
     model_name: str = "efficientnet_b0"
@@ -71,6 +103,8 @@ class InferenceAlignedPreprocessor:
 
     Pipeline (same order as FastAPI + DeepfakeDetector):
         read bytes → validate_and_prepare_image → get_inference_transform
+
+    This ensures offline evaluation metrics reflect production behaviour exactly.
     """
 
     def __init__(
@@ -82,6 +116,20 @@ class InferenceAlignedPreprocessor:
         self._transform = get_inference_transform(input_size)
 
     def __call__(self, image_path: Path) -> torch.Tensor:
+        """
+        Load, validate, and preprocess a single image file.
+        
+        Args:
+            image_path: Path to image file.
+        
+        Returns:
+            Tensor of shape (3, H, W) ready for model forward pass.
+        
+        Raises:
+            ImageValidationError: if validation fails (decompression bomb, corrupt, etc.).
+            UnidentifiedImageError: if PIL cannot identify the image format.
+            OSError: if file cannot be read.
+        """
         file_bytes = image_path.read_bytes()
         img = validate_and_prepare_image(
             file_bytes,
@@ -96,6 +144,7 @@ class _EvaluationPathDataset(Dataset):
     Lightweight dataset over (path, label) pairs with API-aligned preprocessing.
 
     Does not modify data/dataset.py — reads paths from DeepfakeDataset.samples.
+    All preprocessing is deferred to __getitem__, matching production latency.
     """
 
     def __init__(
@@ -110,6 +159,12 @@ class _EvaluationPathDataset(Dataset):
         return len(self._samples)
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, int, str]:
+        """
+        Load and preprocess one sample. On error, skip to the next sample.
+        
+        Returns:
+            Tuple of (tensor, label, path_str).
+        """
         attempts = 0
         current = index
 
@@ -133,6 +188,7 @@ class _EvaluationPathDataset(Dataset):
 def _collate_evaluation_batch(
     batch: list[tuple[torch.Tensor, int, str]],
 ) -> tuple[torch.Tensor, torch.Tensor, list[str]]:
+    """Stack a batch of (tensor, label, path) tuples."""
     tensors = torch.stack([item[0] for item in batch])
     labels = torch.tensor([item[1] for item in batch], dtype=torch.long)
     paths = [item[2] for item in batch]
@@ -140,7 +196,7 @@ def _collate_evaluation_batch(
 
 
 def set_deterministic_mode(seed: int) -> None:
-    """Enable reproducible evaluation (no training randomness)."""
+    """Enable reproducible evaluation (disable CUDA randomness)."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -151,6 +207,11 @@ def set_deterministic_mode(seed: int) -> None:
 
 
 def resolve_device(device: str) -> torch.device:
+    """
+    Resolve a device string ("auto" | "cpu" | "cuda" | "mps") to a torch.device.
+    
+    "auto" detects available hardware: CUDA > MPS > CPU.
+    """
     if device == "auto":
         if torch.cuda.is_available():
             return torch.device("cuda")
@@ -162,7 +223,12 @@ def resolve_device(device: str) -> torch.device:
 
 @dataclass
 class SplitResult:
-    """Raw predictions and metrics for one dataset split."""
+    """
+    Raw predictions and metrics for one dataset split.
+    
+    Stores full prediction arrays (y_true, y_score, y_pred) for post-hoc analysis,
+    plotting, and threshold tuning.
+    """
 
     split: str
     y_true: np.ndarray
@@ -172,6 +238,36 @@ class SplitResult:
     metrics: MetricResult
     num_skipped: int = 0
 
+    def get_false_positives(self) -> tuple[np.ndarray, list[str], np.ndarray]:
+        """
+        Return indices, paths, and scores for false positives.
+        
+        False positives are real images (y_true=0) predicted as fake (y_pred=1).
+        
+        Returns:
+            (indices, paths, scores) — all arrays aligned.
+        """
+        fp_mask = (self.y_true == LABEL_REAL) & (self.y_pred == LABEL_FAKE)
+        fp_indices = np.where(fp_mask)[0]
+        fp_paths = [self.paths[i] for i in fp_indices]
+        fp_scores = self.y_score[fp_indices]
+        return fp_indices, fp_paths, fp_scores
+
+    def get_false_negatives(self) -> tuple[np.ndarray, list[str], np.ndarray]:
+        """
+        Return indices, paths, and scores for false negatives.
+        
+        False negatives are fakes (y_true=1) predicted as real (y_pred=0).
+        
+        Returns:
+            (indices, paths, scores) — all arrays aligned.
+        """
+        fn_mask = (self.y_true == LABEL_FAKE) & (self.y_pred == LABEL_REAL)
+        fn_indices = np.where(fn_mask)[0]
+        fn_paths = [self.paths[i] for i in fn_indices]
+        fn_scores = self.y_score[fn_indices]
+        return fn_indices, fn_paths, fn_scores
+
 
 class Evaluator:
     """
@@ -179,6 +275,7 @@ class Evaluator:
 
     Uses DeepfakeDataset only to enumerate (path, label) pairs — preprocessing
     is performed by InferenceAlignedPreprocessor, not the dataset transform.
+    This ensures evaluation preprocessing exactly matches production inference.
     """
 
     def __init__(self, config: EvaluatorConfig) -> None:
@@ -236,7 +333,12 @@ class Evaluator:
         self,
         loader: DataLoader,
     ) -> tuple[np.ndarray, np.ndarray, list[str]]:
-        """Run forward passes and collect fake-class probabilities."""
+        """
+        Run forward passes on a DataLoader and collect fake-class probabilities.
+        
+        Returns:
+            (y_true, y_score, paths) — all aligned arrays.
+        """
         if self.model is None:
             raise RuntimeError("Call load_model() before predict_dataloader().")
 
@@ -274,6 +376,9 @@ class Evaluator:
             split:         Name for reporting (train / val / test).
             manifest_csv:  Optional CSV manifest (FORMAT B).
             threshold:     Decision threshold on P(fake); defaults to config value.
+        
+        Returns:
+            SplitResult with predictions and metrics.
         """
         if self.model is None:
             self.load_model()
@@ -325,6 +430,9 @@ class Evaluator:
         Args:
             splits:    Mapping split name → directory path.
             manifests: Optional mapping split name → CSV manifest path.
+        
+        Returns:
+            Dict mapping split name → SplitResult.
         """
         set_deterministic_mode(self.config.seed)
         if self.model is None:
@@ -374,7 +482,18 @@ class Evaluator:
 
 
 def default_checkpoint_path(explicit: Optional[Path] = None) -> Path:
-    """Resolve checkpoint — explicit path or registry search."""
+    """
+    Resolve checkpoint — explicit path or registry search.
+    
+    Args:
+        explicit: Explicit checkpoint path, or None to search default location.
+    
+    Returns:
+        Absolute Path to checkpoint file.
+    
+    Raises:
+        FileNotFoundError: if no checkpoint is found.
+    """
     if explicit is not None:
         path = Path(explicit).resolve()
         if not path.is_file():
