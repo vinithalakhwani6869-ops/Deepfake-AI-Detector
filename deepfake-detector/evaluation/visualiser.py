@@ -4,9 +4,11 @@ evaluation/visualiser.py
 Offline evaluation plots only — no training curves.
 
 Generates:
-  • ROC curve
-  • Confusion matrix heatmap
-  • Fake-score distribution by class
+  • ROC curve (TPR vs FPR across all thresholds)
+  • Confusion matrix heatmap (normalized and absolute counts)
+  • Fake-score distribution by class (histograms for threshold calibration)
+
+All plots are optional (matplotlib-gated) and production-grade.
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def _require_matplotlib():
+    """Import matplotlib lazily; raise if not installed."""
     try:
         import matplotlib.pyplot as plt
         return plt
@@ -45,6 +48,16 @@ def plot_roc_curve(
 
     Under class imbalance, inspect this curve rather than accuracy alone:
     a model can have high accuracy but poor TPR at low FPR operating points.
+    
+    Args:
+        y_true: True binary labels (0 or 1).
+        y_score: Predicted P(fake) scores [0, 1].
+        title: Plot title.
+        output_path: If provided, save PNG to this path.
+        dpi: Output DPI (default 150, publication-quality).
+    
+    Returns:
+        Path to saved file if output_path was provided, else None.
     """
     plt = _require_matplotlib()
 
@@ -85,7 +98,21 @@ def plot_confusion_matrix(
     output_path: Path | None = None,
     dpi: int = 150,
 ) -> Path | None:
-    """Plot confusion matrix heatmap (rows=true, cols=predicted)."""
+    """
+    Plot confusion matrix heatmap (rows=true, cols=predicted).
+    
+    Displays absolute counts with per-cell color intensity proportional to value.
+    
+    Args:
+        y_true: True binary labels (0 or 1).
+        y_pred: Predicted binary labels (0 or 1).
+        title: Plot title.
+        output_path: If provided, save PNG to this path.
+        dpi: Output DPI (default 150).
+    
+    Returns:
+        Path to saved file if output_path was provided, else None.
+    """
     plt = _require_matplotlib()
 
     cm = confusion_matrix(y_true, y_pred)
@@ -141,8 +168,20 @@ def plot_score_distribution(
     """
     Histogram of predicted fake probabilities, separated by true class.
 
-    Threshold tuning: choose an operating point where fake/real histograms
-    separate well for your target false-positive rate.
+    Useful for:
+    • Visualising model calibration (overlap indicates confusion)
+    • Threshold tuning: choose a threshold where fake/real histograms separate
+    • Spotting bimodal distributions (e.g. some fakes scored high, others low)
+
+    Args:
+        y_true: True binary labels (0 or 1).
+        y_score: Predicted P(fake) scores [0, 1].
+        title: Plot title.
+        output_path: If provided, save PNG to this path.
+        dpi: Output DPI (default 150).
+    
+    Returns:
+        Path to saved file if output_path was provided, else None.
     """
     plt = _require_matplotlib()
 
@@ -204,6 +243,18 @@ def save_evaluation_plots(
 ) -> dict[str, Path]:
     """
     Save all evaluation plots for one split into ``output_dir``.
+
+    Generates three plots:
+    1. ROC curve (diagnostics for threshold tuning)
+    2. Confusion matrix (absolute counts by class)
+    3. Score distribution (calibration diagnostics)
+
+    Args:
+        y_true: True binary labels (0 or 1).
+        y_score: Predicted P(fake) scores [0, 1].
+        y_pred: Binary predictions (0 or 1) at the decision threshold.
+        output_dir: Directory to save plots under.
+        split: Split name (train/val/test) used in filename.
 
     Returns:
         Mapping plot name → saved file path.
