@@ -3,11 +3,53 @@ evaluation/benchmark.py
 ───────────────────────
 Inference-only performance profiling — no training benchmarks.
 
-Measures:
-  • Per-image latency (ms)
-  • Throughput (images / second)
-  • Peak memory usage during inference
-  • CPU vs GPU comparison (when CUDA is available)
+WHY BENCHMARKING MATTERS FOR PRODUCTION DEEPFAKE DETECTION
+───────────────────────────────────────────────────────────
+Inference speed is a non-functional requirement alongside accuracy:
+
+1. Real-time moderation: content platforms process thousands of videos/second.
+   At latency > 100ms per frame, you can't process 24fps realtime video
+   (1 second of video = 24 frames × latency must be << 1 second).
+
+2. Mobile deployment: phone apps can run inference locally. Latency > 500ms
+   causes user-facing stuttering. Throughput < 1 img/sec = unresponsive UX.
+
+3. GPU vs CPU trade-off: GPU inference is faster but requires infrastructure
+   cost. CPU inference is cheaper to deploy but slower. Benchmark both.
+
+4. Batch vs single-image: production APIs may serve streams (batched) or
+   one-off requests (single image). Latency changes significantly:
+   • Batch(1) latency: ~50ms
+   • Batch(32) latency: ~60ms total / 32 = ~1.9ms per image
+   So batch processing is 25x more efficient. But does your API support batches?
+
+This module measures:
+  • Per-image latency (ms)  — time to process one image
+  • Throughput (img/sec)    — images per second
+  • Peak memory (MB)        — GPU/CPU RAM usage
+  • CPU vs GPU comparison   — speedup multiplier and memory overhead
+
+WARMUP BATCHES AND MEASUREMENT
+───────────────────────────────
+GPU inference has startup overhead:
+  • CUDA kernel compilation on first run
+  • Memory allocator warmup
+  • cuDNN algorithm autotuning
+
+We warm up with a few batches (default 2) and exclude those from timing
+statistics. This ensures stable per-image latency estimates on the measured
+batches, not inflated by one-time startup costs.
+
+CPU BENCHMARKING AS A BASELINE
+───────────────────────────────
+CPU benchmarks serve two purposes:
+  1. Baseline: establish the model's intrinsic compute cost
+     (matrix multiplications, convolutions).
+  2. Comparison: GPU speedup multiplier = CPU latency / GPU latency.
+     If CPU is 10ms/img and GPU is 1ms/img, speedup = 10x.
+
+Note: CPU benchmarks can be very slow (EfficientNet-B0 ≈ 100ms/img on CPU).
+Limit benchmarks to --benchmark-images 50–100 for CPU runs.
 """
 
 from __future__ import annotations
@@ -31,7 +73,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class DeviceBenchmarkResult:
-    """Benchmark statistics for one device."""
+    """
+    Benchmark statistics for one device (CPU or GPU).
+    
+    All timing measurements are in milliseconds (ms).
+    Memory measurements are in megabytes (MB).
+    """
 
     device: str
     num_images: int
@@ -87,6 +134,7 @@ def _prepare_batch_tensors(
     preprocessor: InferenceAlignedPreprocessor,
     device: torch.device,
 ) -> torch.Tensor:
+    """Preprocess and load a batch of images."""
     tensors = [preprocessor(path) for path in paths]
     batch = torch.stack(tensors, dim=0).to(device)
     return batch
@@ -102,7 +150,20 @@ def _benchmark_device(
     batch_size: int,
     warmup_batches: int,
 ) -> DeviceBenchmarkResult:
-    """Run timed inference on ``device`` and collect latency / memory stats."""
+    """
+    Run timed inference on ``device`` and collect latency / memory stats.
+    
+    Args:
+        model: Model in eval mode.
+        paths: List of image file paths to process.
+        preprocessor: InferenceAlignedPreprocessor instance.
+        device: torch.device (cuda or cpu).
+        batch_size: Forward pass batch size.
+        warmup_batches: Number of batches to exclude from measurements.
+    
+    Returns:
+        DeviceBenchmarkResult with latency and memory statistics.
+    """
     model = model.to(device)
     model.eval()
 
@@ -187,15 +248,20 @@ def run_inference_benchmark(
     Profile inference latency, throughput, and memory on CPU and optionally GPU.
 
     Uses the same ``InferenceAlignedPreprocessor`` as production evaluation so
-  benchmark numbers reflect real serving preprocessing cost.
+    benchmark numbers reflect real serving preprocessing cost.
 
     Args:
         model:         Loaded model in eval mode (weights already applied).
         data_dir:      Directory with real/ and fake/ subfolders.
+        manifest_csv:  Optional CSV manifest path (FORMAT B layout).
         max_images:    Cap images profiled (for fast CLI runs).
         batch_size:    Batch size for timed forward passes.
         warmup_batches: Batches excluded from timing statistics.
+        input_size:    Model input resolution (default 224).
         compare_gpu:   If True and CUDA is available, also benchmark on GPU.
+    
+    Returns:
+        BenchmarkReport with CPU and (optionally) GPU results.
     """
     paths = _collect_sample_paths(data_dir, max_images=max_images, manifest_csv=manifest_csv)
     preprocessor = InferenceAlignedPreprocessor(input_size=input_size)
@@ -234,6 +300,11 @@ def run_inference_benchmark(
             gpu_result.latency_mean_ms,
             gpu_result.throughput_images_per_sec,
             gpu_result.peak_memory_mb,
+        )
+        speedup = cpu_result.latency_mean_ms / gpu_result.latency_mean_ms
+        logger.info(
+            "[benchmark] Speedup: GPU is %.1fx faster than CPU",
+            speedup,
         )
 
     return BenchmarkReport(cpu=cpu_result, gpu=gpu_result)
