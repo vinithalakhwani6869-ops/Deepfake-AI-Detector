@@ -1,10 +1,86 @@
+version: '3.8'
+
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: deepfake-detector:latest
+    container_name: deepfake-detector-api
+    
+    # Port mapping: container 8000 → host 8000
     ports:
       - "8000:8000"
-    volumes:
-      - ./checkpoints:/app/checkpoints:ro
-      - ./logs:/app/logs
+    
+    # Environment variables loaded from .env (if present)
+    env_file:
+      - .env
+    
+    # Environment variable overrides
     environment:
-      - MODEL_NAME=efficientnet_b0
+      - LOG_LEVEL=INFO
+      - PYTHONUNBUFFERED=1
+    
+    # Volume mounts
+    volumes:
+      # Read-only model weights (prevent accidental modification)
+      - ./checkpoints:/app/checkpoints:ro
+      # Writeable logs directory (survives container restart)
+      - ./logs:/app/logs
+      # Writeable temp uploads (cleaned up by API)
+      - ./temp_uploads:/app/temp_uploads
+    
+    # Restart policy: restart unless stopped explicitly
+    restart: unless-stopped
+    
+    # Resource limits (prevent resource exhaustion)
+    deploy:
+      resources:
+        limits:
+          # Limit CPU (adjust based on your hardware; 0.0-1.0 per CPU core)
+          cpus: '2'
+          # Limit memory (adjust based on model size; typical: 4GB-8GB)
+          memory: 6G
+        reservations:
+          # Guaranteed resources
+          cpus: '1'
+          memory: 3G
+          # GPU support: uncomment for CUDA inference
+          # devices:
+          #   - driver: nvidia
+          #     count: 1
+          #     capabilities: [gpu]
+    
+    # Health check (built into Dockerfile, but can be overridden here)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Logging configuration (prevents excessive disk usage)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "10"
+        labels: "service=deepfake-detector-api"
+
+  # Optional: reverse proxy (nginx) for production deployments
+  # Uncomment and configure if needed for multiple workers, SSL termination, etc.
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: deepfake-detector-nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - api
+  #   restart: unless-stopped
+
+volumes:
+  # Persistent volumes for critical directories
+  logs:
+  temp_uploads:

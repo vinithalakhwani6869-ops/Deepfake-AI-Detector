@@ -1,8 +1,47 @@
+# Base runtime dependencies
 -r requirements.txt
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Testing Framework
+# ════════════════════════════════════════════════════════════════════════════════
 pytest>=8.0
-httpx>=0.27
-black>=24.0
-mypy>=1.10
-matplotlib>=3.8
-pyyaml>=6.0
-# TODO: albumentations, scikit-learn for extended training pipelines
+pytest-cov>=5.0
+pytest-asyncio>=0.23
+httpx>=0.27                # Async HTTP client for testing
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Code Quality & Formatting
+# ════════════════════════════════════════════════════════════════════════════════
+black>=24.0               # Code formatter
+ruff>=0.4                 # Fast Python linter (Rust-based)
+isort>=5.13               # Import sorter
+mypy>=1.10                # Static type checker
+types-PyYAML>=6.0        # Type stubs for PyYAML
+pre-commit>=3.0          # Git hook manager
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Development Utilities
+# ════════════════════════════════════════════════════════════════════════════════
+ipython>=8.0             # Enhanced Python REPL
+ipdb>=0.13               # IPython debugger
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Training & Evaluation (optional for development)
+# ════════════════════════════════════════════════════════════════════════════════
+PyYAML>=6.0              # YAML config loading
+matplotlib>=3.8          # Plotting (evaluation)
+scikit-learn>=1.4        # Metrics, evaluation
+tensorboard>=2.15        # Training visualization
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Production Deployment Tools
+# ════════════════════════════════════════════════════════════════════════════════
+gunicorn>=21.0           # WSGI server (alternative to uvicorn)
+python-dotenv>=1.0       # .env file loading
+
+# ════════════════════════════════════════════════════════════════════════════════
+# Debugging & Profiling
+# ════════════════════════════════════════════════════════════════════════════════
+py-spy>=0.3              # CPU profiler for performance analysis
+memory-profiler>=0.61    # Memory profiler (use: @profile decorator)
+line-profiler>=4.0       # Line-by-line profiler
