@@ -32,6 +32,7 @@ PyYAML>=6.0              # YAML config loading
 matplotlib>=3.8          # Plotting (evaluation)
 scikit-learn>=1.4        # Metrics, evaluation
 tensorboard>=2.15        # Training visualization
+tqdm>=4.66.0             # Training progress bars
 
 # ════════════════════════════════════════════════════════════════════════════════
 # Production Deployment Tools

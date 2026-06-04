@@ -1,5 +1,4 @@
-# TODO: wire to data/datamodule.py
-train_dir: data/raw/train
-val_dir: data/raw/val
+train_dir: dataset/train
+val_dir: dataset/val
 image_size: 224
 num_workers: 4

@@ -51,6 +51,7 @@ train = [
     "matplotlib>=3.8",
     "scikit-learn>=1.4",
     "tensorboard>=2.15",
+    "tqdm>=4.66.0",
 ]
 
 [project.urls]
