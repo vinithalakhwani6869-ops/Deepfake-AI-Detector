@@ -391,6 +391,18 @@ def main(argv: list[str] | None = None) -> None:
         logger.error("--resume path does not exist: %s", args.resume)
         sys.exit(1)
 
+    # ── Model ─────────────────────────────────────────────────────────────────
+    input_size = model_registry.get_input_size(args.model_name)
+
+    model_config = ModelConfig(
+        name              = args.model_name,
+        pretrained        = not args.no_pretrained,
+        dropout_rate      = args.dropout,
+        freeze_backbone   = args.freeze_backbone or (args.phase1_epochs > 0),
+        drop_connect_rate = args.drop_connect_rate,
+        input_size        = input_size,
+    )
+
     # ── Data ──────────────────────────────────────────────────────────────────
     data_config = DataConfig(
         train_dir            = args.train_dir,
@@ -398,28 +410,13 @@ def main(argv: list[str] | None = None) -> None:
         test_dir             = args.test_dir,
         train_manifest       = args.train_manifest,
         val_manifest         = args.val_manifest,
+        input_size           = input_size,
         batch_size           = args.batch_size,
         num_workers          = args.num_workers,
         pin_memory           = device.type != "cpu",
         persistent_workers   = args.num_workers > 0,
         use_balanced_sampler = not args.no_balanced_sampler,
         seed                 = args.seed,
-    )
-
-    logger.info("[main] Building DataModule  config=%s", data_config)
-    datamodule = DeepfakeDataModule(data_config)
-    datamodule.setup(stage="fit")
-
-    train_loader = datamodule.train_dataloader()
-    val_loader   = datamodule.val_dataloader()
-
-    # ── Model ─────────────────────────────────────────────────────────────────
-    model_config = ModelConfig(
-        name              = args.model_name,
-        pretrained        = not args.no_pretrained,
-        dropout_rate      = args.dropout,
-        freeze_backbone   = args.freeze_backbone or (args.phase1_epochs > 0),
-        drop_connect_rate = args.drop_connect_rate,
     )
 
     logger.info("[main] Building model  config=%s", model_config)

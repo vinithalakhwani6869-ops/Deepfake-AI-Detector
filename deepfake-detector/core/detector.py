@@ -21,7 +21,7 @@ from typing import Optional
 import torch
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from core.model_registry import build_model, load_weights, resolve_weights_path
+from core.model_registry import build_model, load_weights, resolve_weights_path, get_input_size
 from core.postprocessor import logits_to_prediction
 from data.transforms import get_inference_transform
 
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class DeepfakeDetector:
     """
-    Wraps an EfficientNet-B0 binary classifier for deepfake image detection.
+    Wraps an EfficientNet binary classifier for deepfake image detection.
     
     Production features:
       - Lazy model loading (only loads on first predict() call)
@@ -64,13 +64,17 @@ class DeepfakeDetector:
         
         # Device selection with explicit fallback
         self.device = self._select_device()
-        self._transform = get_inference_transform()
+        
+        # Get correct input size for the model
+        self.input_size = get_input_size(model_name)
+        self._transform = get_inference_transform(input_size=self.input_size)
         
         logger.info(
-            "[detector.init] Device: %s | Model: %s | Weights: %s | Lazy load: %s",
+            "[detector.init] Device: %s | Model: %s | Input size: %d | Weights: %s | Lazy load: %s",
             self.device,
             model_name,
-            self.weights_path.exists(),
+            self.input_size,
+            self.weights_path.exists() if self.weights_path else False,
             lazy_load,
         )
         

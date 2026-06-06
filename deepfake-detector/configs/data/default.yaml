@@ -1,4 +1,5 @@
 train_dir: dataset/train
 val_dir: dataset/val
+test_dir: dataset/test
 image_size: 224
 num_workers: 4
