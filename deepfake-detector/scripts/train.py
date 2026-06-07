@@ -419,6 +419,13 @@ def main(argv: list[str] | None = None) -> None:
         seed                 = args.seed,
     )
 
+    logger.info("[main] Building DataModule  config=%s", data_config)
+    datamodule = DeepfakeDataModule(data_config)
+    datamodule.setup(stage="fit")
+
+    train_loader = datamodule.train_dataloader()
+    val_loader   = datamodule.val_dataloader()
+
     logger.info("[main] Building model  config=%s", model_config)
     model = model_registry.build(args.model_name, model_config)
 

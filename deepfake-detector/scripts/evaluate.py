@@ -138,10 +138,13 @@ def _merge_config(args: argparse.Namespace) -> dict[str, Any]:
             return arg_value
         return cfg.get(key, default)
 
+    model_name = pick("model_name", args.model_name, "efficientnet_b0")
+    default_input_size = model_registry.get_input_size(model_name)
+
     return {
         "checkpoint": pick("checkpoint", args.checkpoint),
-        "model_name": pick("model_name", args.model_name, "efficientnet_b0"),
-        "input_size": int(pick("input_size", args.input_size, 224)),
+        "model_name": model_name,
+        "input_size": int(pick("input_size", args.input_size, default_input_size)),
         "batch_size": int(pick("batch_size", args.batch_size, 32)),
         "num_workers": int(pick("num_workers", args.num_workers, 0)),
         "device": pick("device", args.device, "auto"),
