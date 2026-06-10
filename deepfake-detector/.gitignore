@@ -7,3 +7,7 @@ temp_uploads/
 logs/*.log
 .pytest_cache/
 .mypy_cache/
+dataset/
+# Ignore all files in the dataset directory
+checkpoints/
+# Ignore all files in the checkpoints directory

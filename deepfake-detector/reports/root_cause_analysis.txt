@@ -1,0 +1,22 @@
+ROOT CAUSE ANALYSIS: 50% ACCURACY ISSUE
+========================================
+
+1. Untrained Model (Primary Cause)
+----------------------------------
+The model checkpoint `checkpoints/best.pth` was trained on an extremely small subset of data. The training logs in `checkpoints/verify_run/train.log` reveal that the model was trained on only 3 samples (2 real, 1 fake). As a result, the model weights are essentially random/initialized, leading to chance-level accuracy (50%) on a balanced test set.
+
+2. Architecture/Loss Function Mismatch
+--------------------------------------
+The model architecture (EfficientNet-B0) is configured with 2 output neurons (`num_classes=2`). However, the loss functions implemented in `training/losses.py` (specifically `BCEFocalAdapter` and `FocalLoss`) only utilize the second output neuron (`logits[:, 1]`) for binary classification. The first neuron (`logits[:, 0]`) receives no gradients and remains in its randomly initialized state.
+
+3. Inference Pipeline Bug
+-------------------------
+The post-processing logic in `core/postprocessor.py` applies a `softmax` operation across both output neurons. Because the first neuron contains untrained random noise, it corrupts the probability distribution. A correctly trained binary classifier using `BCEWithLogitsLoss` on the second neuron should be evaluated using a `sigmoid` function on that specific neuron only.
+
+4. Prediction Bias
+------------------
+Evaluation shows the model currently predicts the "Real" class for ~98% of samples. This bias is likely due to the random initialization of the first neuron producing slightly higher values on average than the second neuron (which was only "trained" on 3 samples). In a balanced test set, predicting a single class for everything results in exactly 50% accuracy.
+
+CONCLUSION
+----------
+The 50% accuracy is the result of an untrained model being evaluated through a mathematically inconsistent inference pipeline.

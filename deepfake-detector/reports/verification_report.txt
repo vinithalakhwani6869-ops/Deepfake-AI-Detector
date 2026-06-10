@@ -1,0 +1,36 @@
+DEEPFAKE DETECTOR VERIFICATION REPORT
+=====================================
+Model: efficientnet_b0
+Weights: C:\Users\Vinitha Lakhwani\OneDrive\Desktop\MyProjects2\deepfake-detector\checkpoints\best.pth
+Total Samples: 100
+Accuracy: 51.00%
+
+Confusion Matrix:
+             | Pred Real  | Pred Fake 
+--------------------------------------
+Actual Real  | 50         | 0         
+Actual Fake  | 49         | 1         
+
+Example Predictions:
+Actual     | Predicted  | Conf     | File
+------------------------------------------------------------
+Real       | Real       |  53.14% | 0182 (5).jpg
+Real       | Real       |  54.79% | 0040.jpg
+Real       | Real       |  50.98% | 0450 (7).jpg
+Real       | Real       |  51.91% | 0401 (3).jpg
+Real       | Real       |  53.10% | 0365 (8).jpg
+Real       | Real       |  53.74% | 0228 (7).jpg
+Real       | Real       |  58.74% | 0167.jpg
+Real       | Real       |  54.82% | 0893 (6).jpg
+Real       | Real       |  54.75% | 0142 (5).jpg
+Real       | Real       |  52.96% | 0967 (5).jpg
+Real       | Real       |  54.77% | 0691 (3).jpg
+Real       | Real       |  55.73% | 0052 (10).jpg
+Real       | Real       |  51.13% | 0048 (9).jpg
+Real       | Real       |  55.61% | 0153 (6).jpg
+Real       | Real       |  54.78% | 0358 (3).jpg
+Real       | Real       |  53.26% | 0381 (2).jpg
+Real       | Real       |  55.21% | 0827.jpg
+Real       | Real       |  52.22% | 0986 (4).jpg
+Real       | Real       |  54.89% | 0043 (5).jpg
+Real       | Real       |  54.68% | 0919 (6).jpg

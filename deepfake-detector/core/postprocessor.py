@@ -41,13 +41,13 @@ def logits_to_prediction(logits: torch.Tensor) -> tuple[str, float]:
         logger.error("[postprocess] %s", msg)
         raise ValueError(msg)
     
-    # Apply softmax to convert logits to probabilities
-    probs = torch.softmax(logits, dim=1)
-    real_prob = probs[0, 0].item()
-    fake_prob = probs[0, 1].item()
+    # Apply sigmoid to the second logit (Fake class)
+    # The model is trained with BCEWithLogitsLoss on logits[:, 1]
+    fake_prob = torch.sigmoid(logits[0, 1]).item()
+    real_prob = 1.0 - fake_prob
     
     # Determine label
-    if fake_prob >= real_prob:
+    if fake_prob >= 0.5:
         label = "Fake"
         confidence = fake_prob * 100.0
     else:
