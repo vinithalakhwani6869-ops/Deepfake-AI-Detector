@@ -8,6 +8,8 @@ logs/*.log
 .pytest_cache/
 .mypy_cache/
 dataset/
+dataset.zip
 # Ignore all files in the dataset directory
 checkpoints/
+*.pth
 # Ignore all files in the checkpoints directory
